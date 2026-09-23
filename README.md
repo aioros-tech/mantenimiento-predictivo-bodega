@@ -3,7 +3,7 @@
 Sistema de pronóstico y detección de anomalías para cuartos fríos y blast freezers,
 con interpretación automática de resultados en lenguaje natural.
 
-**Dashboard en vivo:** https://lulago3003.github.io/mantenimiento-predictivo-bodega/
+**Dashboard en vivo:** https://aioros-tech.github.io/mantenimiento-predictivo-bodega/
 
 ## Cómo funciona
 
