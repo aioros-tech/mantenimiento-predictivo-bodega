@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Revisión de código Bodega</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --ground:#f3f6f6; --surface:#ffffff; --sunk:#eaeff0; --frost:#e3eef1;
+  --ink:#16222a; --ink-2:#40515a; --muted:#66767f; --rule:#d6dee1; --grid:#e6ecee;
+  --accent:#0f5e78; --accent-soft:#d7e9ef;
+  --ok:#1f7a4a; --ok-soft:#dcefe4; --warn:#9a6200; --warn-soft:#f6ead2; --alert:#c23434; --alert-soft:#f8dede;
+  --add:#e3f3e8; --add-ink:#1f6b40; --del:#fbe6e6; --del-ink:#a33030;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --cond:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --ground:#111618; --surface:#182023; --sunk:#1f282c; --frost:#16262c;
+    --ink:#e5ecee; --ink-2:#b9c6cc; --muted:#8fa0a8; --rule:#2c373c; --grid:#243034;
+    --accent:#63b6d2; --accent-soft:#1d3640;
+    --ok:#4fbf85; --ok-soft:#1b3326; --warn:#e0a84a; --warn-soft:#352a17; --alert:#e66767; --alert-soft:#3a2224;
+    --add:#17301f; --add-ink:#7fd39f; --del:#3a1f22; --del-ink:#f09a9a;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --ground:#111618; --surface:#182023; --sunk:#1f282c; --frost:#16262c;
+  --ink:#e5ecee; --ink-2:#b9c6cc; --muted:#8fa0a8; --rule:#2c373c; --grid:#243034;
+  --accent:#63b6d2; --accent-soft:#1d3640;
+  --ok:#4fbf85; --ok-soft:#1b3326; --warn:#e0a84a; --warn-soft:#352a17; --alert:#e66767; --alert-soft:#3a2224;
+  --add:#17301f; --add-ink:#7fd39f; --del:#3a1f22; --del-ink:#f09a9a;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font:15.5px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding-inline:20px;padding-block:0 72px;display:flex;flex-direction:column;gap:60px}
+h1,h2,h3{font-family:var(--cond);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(30px,5vw,48px);font-weight:700;letter-spacing:-.015em}
+h2{font-size:clamp(23px,3vw,29px);font-weight:600}
+h3{font-size:17px;font-weight:600}
+p{margin:0;max-width:66ch}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
+.muted{color:var(--muted)} .small{font-size:14px}
+code{font-family:var(--mono);font-size:.88em;background:var(--sunk);padding:1px 5px;border-radius:3px}
+section{display:flex;flex-direction:column;gap:22px}
+.sec-head{display:flex;flex-direction:column;gap:10px}
+.sec-head p{color:var(--ink-2)}
+
+.hero{margin-inline:-20px;padding-inline:20px;padding-block:56px 40px;background:linear-gradient(180deg,var(--frost),var(--ground));border-bottom:1px solid var(--rule)}
+.hero-in{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.lede{font-size:clamp(17px,2vw,19.5px);line-height:1.55;color:var(--ink-2);max-width:64ch}
+.lede strong{color:var(--ink);font-weight:600}
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;font:500 12.5px/1 var(--mono);padding:7px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--rule);color:var(--ink-2)}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:8px}
+.fact{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:6px}
+.fact .lab{font:500 11px/1.3 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.fact .val{font:700 30px/1 var(--cond);font-variant-numeric:tabular-nums}
+.fact .sub{font-size:13.5px;color:var(--ink-2);line-height:1.45}
+.fact.al{box-shadow:inset 0 3px 0 var(--alert)}
+
+.pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.ps{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.ps .k{font:500 11px/1 var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.ps b{font-family:var(--cond);font-size:16px;font-weight:600;line-height:1.2}
+.ps span.t{font-size:13px;color:var(--ink-2);line-height:1.4}
+.ps .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:auto}
+.tg{font:600 10.5px/1 var(--mono);padding:4px 6px;border-radius:4px;letter-spacing:.03em}
+.tg.c{background:var(--accent-soft);color:var(--accent)}
+.tg.f{background:var(--alert-soft);color:var(--alert)}
+.edgebox{border:1.5px dashed var(--rule);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.edgebox .k{font:500 11px/1 var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+
+.change{background:var(--surface);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+.ch-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;padding:20px 22px;border-bottom:1px solid var(--grid)}
+.ch-head div{display:flex;flex-direction:column;gap:6px}
+.file{font:500 13px/1 var(--mono);color:var(--muted)}
+.status{display:inline-flex;align-items:center;gap:7px;font:600 12px/1 var(--mono);letter-spacing:.03em;padding:8px 11px;border-radius:999px;white-space:nowrap}
+.status.ok{background:var(--ok-soft);color:var(--ok)} .status.warn{background:var(--warn-soft);color:var(--warn)}
+.ch-body{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.ch-col{padding:20px 22px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.ch-col+.ch-col{border-left:1px solid var(--grid);background:var(--sunk)}
+.qa{display:flex;flex-direction:column;gap:4px}
+.qa b{font-size:14px}
+.qa p{font-size:14px;color:var(--ink-2)}
+.diff{font:12.5px/1.65 var(--mono);overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+.diff .hd{padding:7px 12px;border-bottom:1px solid var(--rule);color:var(--muted);background:var(--sunk)}
+.diff pre{margin:0;padding:8px 0}
+.diff pre span{display:block;padding:0 12px;white-space:pre}
+.diff .a{background:var(--add);color:var(--add-ink)} .diff .d{background:var(--del);color:var(--del-ink)} .diff .c{color:var(--ink-2)}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--ink-2)}
+.checks li{position:relative;padding-left:26px}
+.checks li::before{content:"✓";position:absolute;left:2px;top:0;color:var(--ok);font-weight:700}
+.checks li.x::before{content:"–";color:var(--muted)}
+
+.tbl{overflow-x:auto;border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--grid);vertical-align:top}
+th{font:500 11px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--sunk);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td b{font-weight:600}
+td.fl{font:12.5px/1.4 var(--mono);white-space:nowrap}
+.sev{display:inline-flex;align-items:center;gap:5px;font:600 11px/1 var(--mono);letter-spacing:.04em;text-transform:uppercase;padding:5px 8px;border-radius:999px;white-space:nowrap}
+.sev.h{background:var(--alert-soft);color:var(--alert)} .sev.m{background:var(--warn-soft);color:var(--warn)} .sev.l{background:var(--sunk);color:var(--ink-2)}
+.orig{font:500 11.5px/1.3 var(--mono);color:var(--muted);white-space:nowrap}
+
+.evidence{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.quote{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.quote .who{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font:500 12px/1.3 var(--mono);color:var(--muted)}
+.quote blockquote{margin:0;font-size:14.5px;color:var(--ink-2);border-left:3px solid var(--rule);padding-left:12px}
+.quote mark{background:var(--alert-soft);color:var(--alert);padding:0 2px;border-radius:2px}
+.quote .truth{font-size:13.5px;color:var(--ink);background:var(--sunk);border-radius:6px;padding:8px 10px}
+
+.impact{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;background:var(--ok-soft);border-radius:12px;padding:20px 22px}
+.impact b.big{font:700 34px/1 var(--cond);color:var(--ok);white-space:nowrap}
+.impact p{font-size:14.5px;color:var(--ink-2)}
+.impact.al{background:var(--alert-soft)} .impact.al b.big{color:var(--alert)}
+
+.plan{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.pl{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:8px;border-top:3px solid var(--accent)}
+.pl .when{font:600 12px/1 var(--mono);color:var(--accent);letter-spacing:.05em;text-transform:uppercase}
+.pl ul{margin:0;padding-left:18px;font-size:14px;color:var(--ink-2);display:flex;flex-direction:column;gap:6px}
+footer{font:12.5px/1.6 var(--mono);color:var(--muted);border-top:1px solid var(--rule);padding-top:16px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+@media (max-width:900px){
+  .facts{grid-template-columns:1fr 1fr}
+  .pipe{grid-template-columns:1fr 1fr}
+  .ch-body,.evidence{grid-template-columns:1fr}
+  .ch-col+.ch-col{border-left:0;border-top:1px solid var(--grid)}
+}
+@media (max-width:640px){
+  .wrap{gap:48px;padding-inline:16px}
+  .hero{margin-inline:-16px;padding-inline:16px}
+  .pipe,.plan{grid-template-columns:1fr}
+  .impact{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero"><div class="hero-in">
+  <span class="eyebrow">AIOROS · Mantenimiento predictivo de la bodega de atún · Revisión de código</span>
+  <h1>El despliegue en la Jetson requirió cambios pequeños; la revisión encontró un problema previo en los textos de alerta</h1>
+  <p class="lede">Llevar el sistema a la Jetson requirió <strong>dos cambios pequeños</strong> en el código existente y un <strong>módulo nuevo de despliegue</strong>. Ninguno cambia una sola cifra de los resultados. Al revisar la salida real en la Jetson encontramos un problema que <strong>ya existía</strong> en la Mac: en la mayoría de los reportes de equipos en alerta, el texto dice que el equipo está normal. El estado que calcula el código es correcto; el texto no. Esta revisión explica los cambios, lo que verificamos y siete hallazgos por prioridad.</p>
+  <div class="meta">
+    <span class="chip">Revisado el 21 sep 2026</span>
+    <span class="chip">Complemento del informe de prueba en el borde</span>
+    <span class="chip">2 archivos modificados · 10 archivos nuevos</span>
+  </div>
+  <div class="facts">
+    <div class="fact"><span class="lab">Archivos modificados</span><span class="val">2</span><span class="sub">en <code>src/</code>, ambos listos para integrar</span></div>
+    <div class="fact"><span class="lab">Módulo nuevo</span><span class="val">10</span><span class="sub">archivos en <code>edge/</code> y <code>scripts/</code>, unas 570 líneas</span></div>
+    <div class="fact al"><span class="lab">Hallazgos</span><span class="val">7</span><span class="sub">1 de prioridad alta, 3 media, 3 baja</span></div>
+    <div class="fact"><span class="lab">Efecto en las cifras</span><span class="val">Ninguno</span><span class="sub">60 de 60 datos idénticos a los del dashboard publicado</span></div>
+  </div>
+</div></div>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Contexto</span>
+    <h2>Dónde están los cambios</h2>
+    <p>El sistema tiene cinco etapas por equipo. Los dos cambios tocan la carga de los modelos y la organización del código, no la lógica. El hallazgo principal está en la etapa 3, que es código existente.</p>
+  </div>
+  <div class="pipe">
+    <div class="ps"><span class="k">Etapa 1</span><b>Pronóstico</b><span class="t">TimesFM 2.5 proyecta 32 minutos con su intervalo de confianza.</span><div class="tags"><span class="tg c">Cambio 1</span></div></div>
+    <div class="ps"><span class="k">Etapa 2</span><b>Hechos y estado</b><span class="t">El código compara contra el límite y decide NORMAL o ALERTA.</span></div>
+    <div class="ps"><span class="k">Etapa 3</span><b>Hechos en palabras</b><span class="t">El código convierte las cifras en frases para el modelo de lenguaje.</span><div class="tags"><span class="tg f">Hallazgo 1</span></div></div>
+    <div class="ps"><span class="k">Etapa 4</span><b>Redacción</b><span class="t">El modelo de lenguaje redacta el reporte.</span><div class="tags"><span class="tg c">Cambio 1</span><span class="tg c">Cambio 2</span></div></div>
+    <div class="ps"><span class="k">Etapa 5</span><b>Guardarraíl</b><span class="t">Comprueba que cada número del texto exista en los hechos.</span><div class="tags"><span class="tg f">Hallazgo 2</span></div></div>
+  </div>
+  <div class="edgebox">
+    <span class="k">Nuevo · alrededor de las 5 etapas</span>
+    <p class="small" style="color:var(--ink-2)">Un servicio (<code>edge/service.py</code>) carga los modelos una sola vez en la GPU de la Jetson y repite las 5 etapas para los 4 equipos cada 5 minutos, publicando el dashboard. Lo instalan y lo actualizan los scripts de <code>scripts/</code>, con verificación previa y vuelta atrás. Hallazgos 3 a 7.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Cambio 1</span>
+    <h2>Cargar los modelos desde la Jetson, sin internet</h2>
+  </div>
+  <div class="change">
+    <div class="ch-head"><div><span class="file">src/reporte_slm.py · 14 líneas agregadas, 3 editadas</span><h3>Ruta configurable del modelo de pronóstico y redacción separada de la carga</h3></div><span class="status ok">Listo para integrar</span></div>
+    <div class="ch-body">
+      <div class="ch-col">
+        <div class="qa"><b>Por qué hacía falta</b><p>El modelo de pronóstico se descargaba siempre de internet con un nombre fijo en el código. En la Jetson tiene que cargarse de una copia local, con una versión exacta, para que funcione sin conexión y no cambie solo.</p></div>
+        <div class="qa"><b>Qué cambió</b><p>Una variable de entorno, <code>TFM_MODEL</code>, permite indicar esa copia local; por defecto sigue siendo el mismo nombre de siempre. La redacción pasó a una función propia, <code>generate_text()</code>, para que el servicio cargue el modelo de lenguaje una sola vez y no en cada reporte. Además, si un modelo no carga, ahora se muestra el motivo real en lugar de culpar siempre a la licencia de Gemma.</p></div>
+        <ul class="checks">
+          <li>Sin la variable de entorno, el comportamiento es el mismo que antes</li>
+          <li><code>redactar()</code> devuelve lo mismo que antes; solo delega en la función nueva</li>
+          <li>La función nueva redacta todos los reportes del servicio en la Jetson</li>
+          <li class="x">El script completo, con el PDF, corrió en la Jetson antes de este cambio y no se volvió a correr después</li>
+        </ul>
+      </div>
+      <div class="ch-col">
+        <div class="diff"><div class="hd">src/reporte_slm.py (resumido)</div><pre><span class="a">+TFM_MODEL = os.environ.get("TFM_MODEL", "google/timesfm-2.5-200m-pytorch")</span><span class="c"> MODELO_SLM = os.environ.get("SLM_MODELO", "google/gemma-3-1b-it")</span><span class="c"> …</span><span class="d">-  ….from_pretrained("google/timesfm-2.5-200m-pytorch")</span><span class="a">+  ….from_pretrained(TFM_MODEL)</span><span class="c"> …</span><span class="c">  except Exception as ex:</span><span class="a">+     print(f"  [!] could not load {mid}: …")</span><span class="c"> …</span><span class="c"> def redactar(hechos):</span><span class="c">     mid, tok, mod = cargar_slm()</span><span class="a">+    texto, dt = generate_text(tok, mod, hechos)</span><span class="a">+    return mid, texto, dt</span><span class="a">+</span><span class="a">+def generate_text(tok, mod, hechos):</span><span class="c">     datos = …  (sin cambios)</span></pre></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Cambio 2</span>
+    <h2>Una sola definición de lo que muestra el dashboard</h2>
+  </div>
+  <div class="change">
+    <div class="ch-head"><div><span class="file">src/generar_datos_dashboard.py · reorganizado, misma lógica</span><h3>El trabajo por equipo pasó a una función reutilizable</h3></div><span class="status ok">Listo para integrar</span></div>
+    <div class="ch-body">
+      <div class="ch-col">
+        <div class="qa"><b>Por qué hacía falta</b><p>El servicio de la Jetson tiene que producir exactamente los mismos datos que el dashboard publicado. Copiar esa lógica en otro archivo habría creado dos versiones que con el tiempo se separan.</p></div>
+        <div class="qa"><b>Qué cambió</b><p>El cálculo de cada equipo (pronóstico, hechos, redacción, verificación) pasó a <code>build_unit_entry()</code>, que usan tanto el script como el servicio. El script queda protegido con <code>if __name__ == "__main__"</code>, así que importarlo ya no carga modelos ni lee archivos.</p></div>
+        <ul class="checks">
+          <li>El servicio, que usa esta función, reprodujo el dashboard publicado: 60 de 60 datos idénticos</li>
+          <li>Mismo formato de salida, campo por campo</li>
+          <li class="x">El script por sí solo no se volvió a correr en la Mac; su recorrido es el mismo que el del servicio</li>
+        </ul>
+      </div>
+      <div class="ch-col">
+        <div class="diff"><div class="hd">src/generar_datos_dashboard.py (resumido)</div><pre><span class="a">+def build_unit_entry(nombre, col, serie, limite, tok, mod):</span><span class="c">     rs.EQUIPO, rs.LIMITE_ALARMA, rs.COLUMNA = nombre, limite, col</span><span class="c">     ctx, med, lo, hi = rs.pronosticar(serie)</span><span class="c">     hechos = rs.extraer_hechos(ctx, med, lo, hi, serie)</span><span class="a">+    texto, t_slm = rs.generate_text(tok, mod, hechos)</span><span class="c">     return {"nombre": …, "estado": …, "hechos": …, …}</span><span class="c"></span><span class="a">+if __name__ == "__main__":</span><span class="c">     df = pd.read_csv("anomaly-free.csv", sep=";")</span><span class="c">     mid, tok, mod = rs.cargar_slm()</span><span class="c">     for nombre, col, fin, limite in EQUIPOS:</span><span class="a">+        e = build_unit_entry(nombre, col, serie, limite, tok, mod)</span></pre></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Módulo nuevo</span>
+    <h2>El despliegue en la Jetson</h2>
+    <p>Sigue el mismo esquema que el despliegue de AIOROS Beta. Cada pieza se probó en la Jetson real.</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Archivo</th><th>Qué hace</th><th>Cómo se verificó</th></tr></thead>
+    <tbody>
+      <tr><td class="fl">edge/service.py</td><td>Carga los modelos una vez en la GPU; cada 5 minutos pronostica los 4 equipos, redacta, reconstruye el dashboard y lo publica en el puerto 8095</td><td>Ciclos completos en la Jetson; primer ciclo idéntico al dashboard publicado; vuelta al inicio de los datos al llegar al final</td></tr>
+      <tr><td class="fl">edge/units.yaml</td><td>Equipos, sensor, límite de alarma y punto de inicio del replay</td><td>Mismos valores que el dashboard publicado</td></tr>
+      <tr><td class="fl">edge/models.yaml · download_models.py</td><td>Versión exacta de cada modelo y su descarga a la Jetson</td><td>El servicio carga sin internet</td></tr>
+      <tr><td class="fl">edge/requirements-edge.txt</td><td>Versiones exactas del software, con soporte para la GPU</td><td>La GPU calcula lo mismo que el procesador (diferencia relativa 8,6×10⁻⁸)</td></tr>
+      <tr><td class="fl">edge/aioros-bodega-forecast.service</td><td>Servicio permanente; arranca con la placa y se reinicia si falla</td><td>Activo tras los despliegues y las vueltas atrás</td></tr>
+      <tr><td class="fl">scripts/bootstrap-jetson.sh</td><td>Preparación única con permisos de administrador, limitados a este servicio</td><td>Ejecutado una vez; permisos comprobados</td></tr>
+      <tr><td class="fl">scripts/deploy-edge.sh</td><td>Copia una versión nueva, la prueba con un ciclo real y solo entonces la activa; si no arranca, vuelve a la anterior</td><td>2 intentos fallidos detenidos antes de activar; 2 despliegues correctos, uno con el servicio en marcha</td></tr>
+      <tr><td class="fl">scripts/rollback-edge.sh</td><td>Vuelve a una versión anterior ya verificada</td><td>Ida y vuelta entre las dos versiones</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Hallazgo principal · previo al despliegue</span>
+    <h2>Los textos de alerta dicen que el equipo está normal</h2>
+    <p>Revisamos los 16 reportes que generó la Jetson en sus primeros ciclos. En 7 el pronóstico cruza el límite de alarma y el estado es ALERTA. <strong>Solo 1 de esos 7 textos menciona el cruce; 5 dicen que el equipo opera en rango normal o que no hay riesgo.</strong> La Mac produjo el mismo texto para el mismo caso, así que el problema no viene del despliegue.</p>
+  </div>
+  <div class="evidence">
+    <div class="quote">
+      <div class="who"><span>Blast freezer 1 · ciclo 2</span><span>estado: ALERTA</span></div>
+      <blockquote>El blast freezer 1 está funcionando <mark>dentro del rango normal</mark> con una lectura actual de 88.9 unidades del sensor. […] lo que indica que <mark>no hay riesgo inmediato</mark> de sobrecalentamiento o daño estructural.</blockquote>
+      <div class="truth">Lo que calculó el código: el pronóstico cruza el límite de 89,3 en ≈ 2 minutos.</div>
+    </div>
+    <div class="quote">
+      <div class="who"><span>Blast freezer 1 · dashboard publicado (Mac)</span><span>estado: ALERTA</span></div>
+      <blockquote>Este comportamiento ascendente indica una tendencia positiva, aunque <mark>aún no supera el límite de alarma</mark>.</blockquote>
+      <div class="truth">Lo que calculó el código: el pronóstico cruza el límite en ≈ 8,5 minutos.</div>
+    </div>
+  </div>
+  <div class="change">
+    <div class="ch-body">
+      <div class="ch-col">
+        <div class="qa"><b>Causa</b><p>No es solo el modelo de lenguaje. La etapa 3, que es código, le entrega la frase «El equipo opera en rango normal» siempre que la lectura <em>actual</em> esté bajo el límite, aunque el pronóstico lo cruce. La advertencia del cruce va más abajo en la lista, y el modelo tiende a quedarse con la primera frase.</p></div>
+        <div class="qa"><b>Por qué no lo detecta el guardarraíl</b><p>El guardarraíl solo comprueba números. «Rango normal» y «no hay riesgo» no tienen números, así que pasan.</p></div>
+        <div class="qa"><b>Qué limita el daño hoy</b><p>El estado ALERTA, el veredicto y la tabla del dashboard los calcula el código y son correctos. El riesgo es que alguien lea solo el texto.</p></div>
+      </div>
+      <div class="ch-col">
+        <div class="diff"><div class="hd">src/reporte_slm.py · hechos_en_palabras() (actual)</div><pre><span class="c">    if margen > 0:</span><span class="d">        f.append(f"La lectura actual esta {margen} … POR DEBAJO del limite …"</span><span class="d">                 f"El equipo opera en rango normal.")</span><span class="c">    …</span><span class="c">    if h["supera_limite"]:</span><span class="c">        f.append("ADVERTENCIA: el pronostico cruza el limite …")</span></pre></div>
+        <div class="qa"><b>Arreglo recomendado</b><p>1) Decir «opera en rango normal» solo si el pronóstico no cruza el límite, y poner la advertencia primero. 2) Agregar al guardarraíl una comprobación de sentido: si el estado es ALERTA, el texto debe mencionar el cruce y no puede decir «rango normal» ni «sin riesgo»; si falla, mostrar un texto armado por el código.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Todos los hallazgos</span>
+    <h2>Siete puntos, por prioridad</h2>
+    <p>Los dos primeros están en código que ya existía y aparecen igual en la Mac. Los demás son del módulo nuevo de despliegue.</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Prioridad</th><th>Hallazgo</th><th>Por qué importa</th><th>Origen</th></tr></thead>
+    <tbody>
+      <tr><td><span class="sev h">Alta</span></td><td><b>Los textos de alerta contradicen el estado.</b> 5 de 7 reportes en ALERTA dicen que el equipo está normal o sin riesgo.</td><td>Un supervisor que lee solo el texto no actuaría a tiempo. Ver arriba.</td><td class="orig">existente · <code>hechos_en_palabras()</code></td></tr>
+      <tr><td><span class="sev m">Media</span></td><td><b>El guardarraíl marca como inventada una cifra correcta.</b> La tendencia se entrega al modelo como valor absoluto (0.017), pero el guardarraíl solo acepta ese valor redondeado a 2 decimales. Además ignora el signo, así que también marca «−0.017».</td><td>Una falsa alarma del guardarraíl (1 de 16 reportes) le quita credibilidad y tapa las verdaderas. Se arregla con una línea.</td><td class="orig">existente · <code>verificar()</code></td></tr>
+      <tr><td><span class="sev m">Media</span></td><td><b>Las versiones no llevan su propio entorno de software.</b> Al cambiar las versiones fijadas, el despliegue rehace el entorno compartido mientras el servicio anterior sigue funcionando, y una vuelta atrás usa el entorno nuevo.</td><td>Una vuelta atrás a una versión con otras dependencias podría no arrancar. Arreglo: un entorno por conjunto de versiones, referenciado por cada versión instalada. El despliegue de Beta tiene el mismo esquema.</td><td class="orig">nuevo · <code>deploy-edge.sh</code></td></tr>
+      <tr><td><span class="sev m">Media</span></td><td><b>Margen de memoria de 0,5 GB.</b> La protección (este servicio se detiene primero si falta memoria) está configurada pero no se probó con memoria agotada de verdad.</td><td>Un pico de los otros servicios AIOROS podría reiniciar el pronóstico. Arreglo de fondo: comprimir el modelo de lenguaje (≈ 1 GB en lugar de 2,9 GB).</td><td class="orig">nuevo · despliegue</td></tr>
+      <tr><td><span class="sev l">Baja</span></td><td><b>El historial de reportes crece sin límite.</b> Unos 1,9 MB por día.</td><td>Unos 0,7 GB al año; hay espacio de sobra, pero conviene rotarlo o archivarlo por día.</td><td class="orig">nuevo · <code>service.py</code></td></tr>
+      <tr><td><span class="sev l">Baja</span></td><td><b>El pie del dashboard está desactualizado.</b> Dice que la prueba corre «en local» y que el despliegue previsto usará modelos cuantizados.</td><td>El dashboard ahora se sirve desde la Jetson, con modelos sin comprimir.</td><td class="orig">existente · plantilla</td></tr>
+      <tr><td><span class="sev l">Baja</span></td><td><b>El dashboard no pide contraseña.</b> Lo puede abrir cualquiera en la red local, en el puerto 8095.</td><td>Aceptable para la demostración; en la bodega, restringir el acceso.</td><td class="orig">nuevo · <code>service.py</code></td></tr>
+    </tbody>
+  </table></div>
+  <div class="impact">
+    <b class="big">60 / 60</b>
+    <p><strong>Ningún cambio de esta revisión alteró una cifra.</strong> Los 15 datos de cada uno de los 4 equipos son idénticos en la Jetson y en el dashboard publicado. Los dos hallazgos del guardarraíl y los textos ya estaban en la versión de la Mac; el despliegue solo los hizo visibles al generar reportes cada 5 minutos.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Plan recomendado</span>
+    <h2>Qué hacer y cuándo</h2>
+  </div>
+  <div class="plan">
+    <div class="pl"><span class="when">Ahora</span><h3>Integrar y corregir lo trivial</h3><ul><li>Integrar los cambios 1 y 2 y el módulo de despliegue</li><li>Arreglar el falso positivo del guardarraíl (una línea)</li><li>Actualizar el pie del dashboard</li></ul></div>
+    <div class="pl"><span class="when">Antes de mostrarlo a un cliente</span><h3>Textos de alerta confiables</h3><ul><li>Corregir la frase «rango normal» en la etapa 3</li><li>Comprobación de sentido en el guardarraíl, con texto de respaldo armado por el código</li><li>Volver a revisar todos los reportes en ALERTA</li></ul></div>
+    <div class="pl"><span class="when">Antes de producción</span><h3>Robustez en la bodega</h3><ul><li>Comprimir el modelo de lenguaje y revalidar</li><li>Un entorno de software por versión instalada</li><li>Rotar el historial y restringir el acceso al dashboard</li></ul></div>
+  </div>
+</section>
+
+<footer>AIOROS · Mantenimiento predictivo de la bodega de atún · Revisión de código, 21 de septiembre de 2026 · Complemento de «Prueba en el borde» (<code>bodega-prueba-borde.es.html</code>)</footer>
+</div>
+</body>
+</html>

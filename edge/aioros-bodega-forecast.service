@@ -1,0 +1,34 @@
+# systemd unit for the forecasting service (see docs/DEPLOY-JETSON.md).
+# scripts/bootstrap-jetson.sh installs it into /etc/systemd/system/. It always
+# runs /opt/aioros-bodega/current: activating a release or rolling back means
+# moving that symlink and restarting this service.
+[Unit]
+Description=AIOROS Bodega - TimesFM 2.5 forecast + SLM report (sensor replay)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=/opt/aioros-bodega/current
+EnvironmentFile=-/opt/aioros-bodega/service.env
+ExecStart=/opt/aioros-bodega/venv/bin/python /opt/aioros-bodega/current/edge/service.py \
+    --models-dir /opt/aioros-bodega/models \
+    --output /opt/aioros-bodega/output \
+    --interval ${AIOROS_BODEGA_INTERVAL} --step ${AIOROS_BODEGA_STEP} \
+    --port ${AIOROS_BODEGA_PORT} --require-cuda
+Environment=AIOROS_BODEGA_INTERVAL=300
+Environment=AIOROS_BODEGA_STEP=10
+Environment=AIOROS_BODEGA_PORT=8095
+Environment=HF_HUB_OFFLINE=1
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=15
+Nice=5
+# Holds ~3.8 GB (weights in unified memory, not swappable). If the board runs
+# out of memory, let the OOM killer pick this service instead of Alpha/Beta.
+# (No MemoryMax: RSS counts GPU memory twice and reads ~5.9 GB.)
+OOMScoreAdjust=800
+
+[Install]
+WantedBy=multi-user.target

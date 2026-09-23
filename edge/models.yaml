@@ -1,0 +1,14 @@
+# Weights the Jetson runs, pinned to an exact Hugging Face revision (the
+# equivalent of pinning package versions). deploy-edge.sh downloads them ONCE
+# to /opt/aioros-bodega/models/<repo>@<revision>/ and the service loads them
+# from there with no network (HF_HUB_OFFLINE=1). Changing a revision means a new
+# download on the next deploy; old ones are kept so rollback works offline.
+#
+# SLM: Gemma 3 is gated, so the Jetson runs the open fallback that
+# src/reporte_slm.py already uses (Qwen2.5-1.5B-Instruct).
+timesfm:
+  repo: google/timesfm-2.5-200m-pytorch
+  revision: 1d952420fba87f3c6dee4f240de0f1a0fbc790e3
+slm:
+  repo: Qwen/Qwen2.5-1.5B-Instruct
+  revision: 989aa7980e4cf806f80c7fef2b1adb7bc71aa306

@@ -1,0 +1,19 @@
+# Runtime for the service on the Jetson (edge/service.py). EXACT versions.
+# Jetson Orin Nano with JetPack 7 (L4T R39, CUDA 13, Python 3.12).
+#
+# torch: PyPI aarch64 wheel (CUDA 13), pinned by URL and sha256. Its nvidia-*
+# dependencies (cuDNN, cuBLAS, ...) come with exact versions in its metadata.
+# NOTE: the Jetson AI Lab wheel (sbsa/cu130) does NOT work as is: it expects a
+# system cuDNN and JetPack 7 does not ship one (ImportError libcudnn.so.9).
+# Neither wheel has sm_87 (Orin) kernels; thanks to CUDA binary compatibility
+# the sm_80 ones run on 8.7, and torch prints a UserWarning that can be ignored.
+# Verified: TimesFM on GPU == CPU within 1e-7 relative error (docs/DEPLOY-JETSON.md §8).
+torch @ https://files.pythonhosted.org/packages/13/16/42e5915ebe4868caa6bac83a8ed59db57f12e9a61b7d749d584776ed53d5/torch-2.11.0-cp312-cp312-manylinux_2_28_aarch64.whl#sha256=f99924682ef0aa6a4ab3b1b76f40dc6e273fca09f367d15a524266db100a723f
+timesfm==3.0.2
+transformers==5.17.0
+tokenizers==0.23.2
+safetensors==0.8.0
+huggingface_hub==1.32.0
+numpy==2.5.3
+pandas==3.0.6
+pyyaml==6.0.3
