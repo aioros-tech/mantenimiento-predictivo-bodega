@@ -21,6 +21,8 @@ EQUIPO = os.environ.get("EQUIPO", "Cuarto frio 1")
 CONTEXTO, HORIZONTE, PASO_SEG = 512, 64, 30      # 64 pasos x 30 s = 32 min
 LIMITE_ALARMA = float(os.environ.get("LIMITE_ALARMA", 91.0))   # umbral operativo
 
+# Hugging Face id or local folder (on the Jetson: copies pinned by revision)
+TFM_MODEL = os.environ.get("TFM_MODEL", "google/timesfm-2.5-200m-pytorch")
 MODELO_SLM = os.environ.get("SLM_MODELO", "google/gemma-3-1b-it")
 RESPALDO   = "Qwen/Qwen2.5-1.5B-Instruct"
 
@@ -35,7 +37,7 @@ def _modelo_tfm():
     global _TFM
     if _TFM is None:
         import timesfm
-        _TFM = timesfm.TimesFM_2p5_200M_torch.from_pretrained("google/timesfm-2.5-200m-pytorch")
+        _TFM = timesfm.TimesFM_2p5_200M_torch.from_pretrained(TFM_MODEL)
         _TFM.compile(timesfm.ForecastConfig(max_context=CONTEXTO, max_horizon=HORIZONTE,
                                             normalize_inputs=True,
                                             use_continuous_quantile_head=True))
@@ -166,15 +168,22 @@ def cargar_slm():
             tok = AutoTokenizer.from_pretrained(mid)
             mod = AutoModelForCausalLM.from_pretrained(mid, dtype=torch.float16).to(DISPOSITIVO)
             return mid, tok, mod
-        except Exception:
+        except Exception as ex:
+            print(f"  [!] could not load {mid}: {type(ex).__name__}: {str(ex)[:200]}")
             if mid == MODELO_SLM:
-                print(f"  [!] {MODELO_SLM} requiere aceptar la licencia y un token de Hugging Face")
+                print(f"      (Gemma requiere aceptar la licencia y un token de Hugging Face)")
                 print(f"      -> usando respaldo abierto: {RESPALDO}")
     raise RuntimeError("ningun SLM disponible")
 
 
 def redactar(hechos):
     mid, tok, mod = cargar_slm()
+    texto, dt = generate_text(tok, mod, hechos)
+    return mid, texto, dt
+
+
+def generate_text(tok, mod, hechos):
+    """Write the report with an already-loaded SLM (the Jetson service loads it once)."""
     datos = "\n".join(f"- {x}" for x in hechos_en_palabras(hechos))
     msgs = [{"role": "user", "content": PROMPT.format(datos=datos)}]
     entrada = tok.apply_chat_template(msgs, add_generation_prompt=True,
@@ -186,7 +195,7 @@ def redactar(hechos):
                               pad_token_id=tok.eos_token_id)
     dt = time.time() - t0
     texto = tok.decode(salida[0][n_prompt:], skip_special_tokens=True).strip()
-    return mid, texto, dt
+    return texto, dt
 
 
 # ------------------------------------------------------- 4. reporte en PDF

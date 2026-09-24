@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Cold Store Code Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --ground:#f3f6f6; --surface:#ffffff; --sunk:#eaeff0; --frost:#e3eef1;
+  --ink:#16222a; --ink-2:#40515a; --muted:#66767f; --rule:#d6dee1; --grid:#e6ecee;
+  --accent:#0f5e78; --accent-soft:#d7e9ef;
+  --ok:#1f7a4a; --ok-soft:#dcefe4; --warn:#9a6200; --warn-soft:#f6ead2; --alert:#c23434; --alert-soft:#f8dede;
+  --add:#e3f3e8; --add-ink:#1f6b40; --del:#fbe6e6; --del-ink:#a33030;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --cond:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --ground:#111618; --surface:#182023; --sunk:#1f282c; --frost:#16262c;
+    --ink:#e5ecee; --ink-2:#b9c6cc; --muted:#8fa0a8; --rule:#2c373c; --grid:#243034;
+    --accent:#63b6d2; --accent-soft:#1d3640;
+    --ok:#4fbf85; --ok-soft:#1b3326; --warn:#e0a84a; --warn-soft:#352a17; --alert:#e66767; --alert-soft:#3a2224;
+    --add:#17301f; --add-ink:#7fd39f; --del:#3a1f22; --del-ink:#f09a9a;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --ground:#111618; --surface:#182023; --sunk:#1f282c; --frost:#16262c;
+  --ink:#e5ecee; --ink-2:#b9c6cc; --muted:#8fa0a8; --rule:#2c373c; --grid:#243034;
+  --accent:#63b6d2; --accent-soft:#1d3640;
+  --ok:#4fbf85; --ok-soft:#1b3326; --warn:#e0a84a; --warn-soft:#352a17; --alert:#e66767; --alert-soft:#3a2224;
+  --add:#17301f; --add-ink:#7fd39f; --del:#3a1f22; --del-ink:#f09a9a;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font:15.5px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding-inline:20px;padding-block:0 72px;display:flex;flex-direction:column;gap:60px}
+h1,h2,h3{font-family:var(--cond);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(30px,5vw,48px);font-weight:700;letter-spacing:-.015em}
+h2{font-size:clamp(23px,3vw,29px);font-weight:600}
+h3{font-size:17px;font-weight:600}
+p{margin:0;max-width:66ch}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
+.muted{color:var(--muted)} .small{font-size:14px}
+code{font-family:var(--mono);font-size:.88em;background:var(--sunk);padding:1px 5px;border-radius:3px}
+section{display:flex;flex-direction:column;gap:22px}
+.sec-head{display:flex;flex-direction:column;gap:10px}
+.sec-head p{color:var(--ink-2)}
+
+.hero{margin-inline:-20px;padding-inline:20px;padding-block:56px 40px;background:linear-gradient(180deg,var(--frost),var(--ground));border-bottom:1px solid var(--rule)}
+.hero-in{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.lede{font-size:clamp(17px,2vw,19.5px);line-height:1.55;color:var(--ink-2);max-width:64ch}
+.lede strong{color:var(--ink);font-weight:600}
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;font:500 12.5px/1 var(--mono);padding:7px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--rule);color:var(--ink-2)}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:8px}
+.fact{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:6px}
+.fact .lab{font:500 11px/1.3 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.fact .val{font:700 30px/1 var(--cond);font-variant-numeric:tabular-nums}
+.fact .sub{font-size:13.5px;color:var(--ink-2);line-height:1.45}
+.fact.al{box-shadow:inset 0 3px 0 var(--alert)}
+
+.pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.ps{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.ps .k{font:500 11px/1 var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.ps b{font-family:var(--cond);font-size:16px;font-weight:600;line-height:1.2}
+.ps span.t{font-size:13px;color:var(--ink-2);line-height:1.4}
+.ps .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:auto}
+.tg{font:600 10.5px/1 var(--mono);padding:4px 6px;border-radius:4px;letter-spacing:.03em}
+.tg.c{background:var(--accent-soft);color:var(--accent)}
+.tg.f{background:var(--alert-soft);color:var(--alert)}
+.edgebox{border:1.5px dashed var(--rule);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.edgebox .k{font:500 11px/1 var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+
+.change{background:var(--surface);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+.ch-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;padding:20px 22px;border-bottom:1px solid var(--grid)}
+.ch-head div{display:flex;flex-direction:column;gap:6px}
+.file{font:500 13px/1 var(--mono);color:var(--muted)}
+.status{display:inline-flex;align-items:center;gap:7px;font:600 12px/1 var(--mono);letter-spacing:.03em;padding:8px 11px;border-radius:999px;white-space:nowrap}
+.status.ok{background:var(--ok-soft);color:var(--ok)} .status.warn{background:var(--warn-soft);color:var(--warn)}
+.ch-body{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.ch-col{padding:20px 22px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.ch-col+.ch-col{border-left:1px solid var(--grid);background:var(--sunk)}
+.qa{display:flex;flex-direction:column;gap:4px}
+.qa b{font-size:14px}
+.qa p{font-size:14px;color:var(--ink-2)}
+.diff{font:12.5px/1.65 var(--mono);overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+.diff .hd{padding:7px 12px;border-bottom:1px solid var(--rule);color:var(--muted);background:var(--sunk)}
+.diff pre{margin:0;padding:8px 0}
+.diff pre span{display:block;padding:0 12px;white-space:pre}
+.diff .a{background:var(--add);color:var(--add-ink)} .diff .d{background:var(--del);color:var(--del-ink)} .diff .c{color:var(--ink-2)}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--ink-2)}
+.checks li{position:relative;padding-left:26px}
+.checks li::before{content:"✓";position:absolute;left:2px;top:0;color:var(--ok);font-weight:700}
+.checks li.x::before{content:"–";color:var(--muted)}
+
+.tbl{overflow-x:auto;border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--grid);vertical-align:top}
+th{font:500 11px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--sunk);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td b{font-weight:600}
+td.fl{font:12.5px/1.4 var(--mono);white-space:nowrap}
+.sev{display:inline-flex;align-items:center;gap:5px;font:600 11px/1 var(--mono);letter-spacing:.04em;text-transform:uppercase;padding:5px 8px;border-radius:999px;white-space:nowrap}
+.sev.h{background:var(--alert-soft);color:var(--alert)} .sev.m{background:var(--warn-soft);color:var(--warn)} .sev.l{background:var(--sunk);color:var(--ink-2)}
+.orig{font:500 11.5px/1.3 var(--mono);color:var(--muted);white-space:nowrap}
+
+.evidence{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.quote{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.quote .who{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font:500 12px/1.3 var(--mono);color:var(--muted)}
+.quote blockquote{margin:0;font-size:14.5px;color:var(--ink-2);border-left:3px solid var(--rule);padding-left:12px}
+.quote mark{background:var(--alert-soft);color:var(--alert);padding:0 2px;border-radius:2px}
+.quote .truth{font-size:13.5px;color:var(--ink);background:var(--sunk);border-radius:6px;padding:8px 10px}
+
+.impact{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;background:var(--ok-soft);border-radius:12px;padding:20px 22px}
+.impact b.big{font:700 34px/1 var(--cond);color:var(--ok);white-space:nowrap}
+.impact p{font-size:14.5px;color:var(--ink-2)}
+.impact.al{background:var(--alert-soft)} .impact.al b.big{color:var(--alert)}
+
+.plan{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.pl{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:8px;border-top:3px solid var(--accent)}
+.pl .when{font:600 12px/1 var(--mono);color:var(--accent);letter-spacing:.05em;text-transform:uppercase}
+.pl ul{margin:0;padding-left:18px;font-size:14px;color:var(--ink-2);display:flex;flex-direction:column;gap:6px}
+footer{font:12.5px/1.6 var(--mono);color:var(--muted);border-top:1px solid var(--rule);padding-top:16px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+@media (max-width:900px){
+  .facts{grid-template-columns:1fr 1fr}
+  .pipe{grid-template-columns:1fr 1fr}
+  .ch-body,.evidence{grid-template-columns:1fr}
+  .ch-col+.ch-col{border-left:0;border-top:1px solid var(--grid)}
+}
+@media (max-width:640px){
+  .wrap{gap:48px;padding-inline:16px}
+  .hero{margin-inline:-16px;padding-inline:16px}
+  .pipe,.plan{grid-template-columns:1fr}
+  .impact{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero"><div class="hero-in">
+  <span class="eyebrow">AIOROS · Predictive maintenance for the tuna cold store · Code review</span>
+  <h1>Deploying to the Jetson needed small changes; the review found an existing problem in the alert texts</h1>
+  <p class="lede">Moving the system to the Jetson took <strong>two small changes</strong> to the existing code plus a <strong>new deployment module</strong>. None of them changes a single figure in the results. While reviewing the Jetson's real output we found a problem that <strong>already existed</strong> on the Mac: in most reports for units in alert, the text says the unit is normal. The status computed by the code is correct; the text is not. This review explains the changes, what we verified and seven findings by priority.</p>
+  <div class="meta">
+    <span class="chip">Reviewed 21 Sep 2026</span>
+    <span class="chip">Companion to the edge test report</span>
+    <span class="chip">2 files changed · 10 new files</span>
+  </div>
+  <div class="facts">
+    <div class="fact"><span class="lab">Files changed</span><span class="val">2</span><span class="sub">in <code>src/</code>, both ready to merge</span></div>
+    <div class="fact"><span class="lab">New module</span><span class="val">10</span><span class="sub">files in <code>edge/</code> and <code>scripts/</code>, about 570 lines</span></div>
+    <div class="fact al"><span class="lab">Findings</span><span class="val">7</span><span class="sub">1 high priority, 3 medium, 3 low</span></div>
+    <div class="fact"><span class="lab">Effect on figures</span><span class="val">None</span><span class="sub">60 of 60 values identical to the published dashboard</span></div>
+  </div>
+</div></div>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Context</span>
+    <h2>Where the changes are</h2>
+    <p>The system runs five stages per unit. The two changes touch how the models are loaded and how the code is organised, not the logic. The main finding is in stage 3, which is existing code.</p>
+  </div>
+  <div class="pipe">
+    <div class="ps"><span class="k">Stage 1</span><b>Forecast</b><span class="t">TimesFM 2.5 projects 32 minutes ahead with its confidence interval.</span><div class="tags"><span class="tg c">Change 1</span></div></div>
+    <div class="ps"><span class="k">Stage 2</span><b>Facts and status</b><span class="t">The code compares against the limit and decides NORMAL or ALERT.</span></div>
+    <div class="ps"><span class="k">Stage 3</span><b>Facts in words</b><span class="t">The code turns the figures into sentences for the language model.</span><div class="tags"><span class="tg f">Finding 1</span></div></div>
+    <div class="ps"><span class="k">Stage 4</span><b>Writing</b><span class="t">The language model writes the report.</span><div class="tags"><span class="tg c">Change 1</span><span class="tg c">Change 2</span></div></div>
+    <div class="ps"><span class="k">Stage 5</span><b>Guardrail</b><span class="t">Checks that every number in the text exists in the facts.</span><div class="tags"><span class="tg f">Finding 2</span></div></div>
+  </div>
+  <div class="edgebox">
+    <span class="k">New · around the 5 stages</span>
+    <p class="small" style="color:var(--ink-2)">A service (<code>edge/service.py</code>) loads the models once onto the Jetson's GPU and repeats the 5 stages for the 4 units every 5 minutes, publishing the dashboard. The scripts in <code>scripts/</code> install and update it, with a check before activation and rollback. Findings 3 to 7.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Change 1</span>
+    <h2>Load the models on the Jetson, without internet</h2>
+  </div>
+  <div class="change">
+    <div class="ch-head"><div><span class="file">src/reporte_slm.py · 14 lines added, 3 edited</span><h3>Configurable forecasting-model path, and writing split from loading</h3></div><span class="status ok">Ready to merge</span></div>
+    <div class="ch-body">
+      <div class="ch-col">
+        <div class="qa"><b>Why it was needed</b><p>The forecasting model was always downloaded from the internet under a name hard-coded in the source. On the Jetson it has to load from a local copy of one exact version, so it works offline and never changes on its own.</p></div>
+        <div class="qa"><b>What changed</b><p>An environment variable, <code>TFM_MODEL</code>, can point at that local copy; by default it is still the same name as before. Writing moved into its own function, <code>generate_text()</code>, so the service loads the language model once instead of for every report. Also, when a model fails to load, the real reason is now shown instead of always blaming Gemma's licence.</p></div>
+        <ul class="checks">
+          <li>Without the environment variable, behaviour is the same as before</li>
+          <li><code>redactar()</code> returns the same as before; it only delegates to the new function</li>
+          <li>The new function writes every report the service produces on the Jetson</li>
+          <li class="x">The full script, with the PDF, ran on the Jetson before this change and was not re-run afterwards</li>
+        </ul>
+      </div>
+      <div class="ch-col">
+        <div class="diff"><div class="hd">src/reporte_slm.py (abridged)</div><pre><span class="a">+TFM_MODEL = os.environ.get("TFM_MODEL", "google/timesfm-2.5-200m-pytorch")</span><span class="c"> MODELO_SLM = os.environ.get("SLM_MODELO", "google/gemma-3-1b-it")</span><span class="c"> …</span><span class="d">-  ….from_pretrained("google/timesfm-2.5-200m-pytorch")</span><span class="a">+  ….from_pretrained(TFM_MODEL)</span><span class="c"> …</span><span class="c">  except Exception as ex:</span><span class="a">+     print(f"  [!] could not load {mid}: …")</span><span class="c"> …</span><span class="c"> def redactar(hechos):</span><span class="c">     mid, tok, mod = cargar_slm()</span><span class="a">+    texto, dt = generate_text(tok, mod, hechos)</span><span class="a">+    return mid, texto, dt</span><span class="a">+</span><span class="a">+def generate_text(tok, mod, hechos):</span><span class="c">     datos = …  (unchanged)</span></pre></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Change 2</span>
+    <h2>One definition of what the dashboard shows</h2>
+  </div>
+  <div class="change">
+    <div class="ch-head"><div><span class="file">src/generar_datos_dashboard.py · reorganised, same logic</span><h3>The per-unit work moved into a reusable function</h3></div><span class="status ok">Ready to merge</span></div>
+    <div class="ch-body">
+      <div class="ch-col">
+        <div class="qa"><b>Why it was needed</b><p>The Jetson service has to produce exactly the same data as the published dashboard. Copying that logic into another file would have created two versions that drift apart over time.</p></div>
+        <div class="qa"><b>What changed</b><p>The per-unit computation (forecast, facts, writing, check) moved into <code>build_unit_entry()</code>, used by both the script and the service. The script is now guarded by <code>if __name__ == "__main__"</code>, so importing it no longer loads models or reads files.</p></div>
+        <ul class="checks">
+          <li>The service, which uses this function, reproduced the published dashboard: 60 of 60 values identical</li>
+          <li>Same output format, field by field</li>
+          <li class="x">The script on its own was not re-run on the Mac; it follows the same path as the service</li>
+        </ul>
+      </div>
+      <div class="ch-col">
+        <div class="diff"><div class="hd">src/generar_datos_dashboard.py (abridged)</div><pre><span class="a">+def build_unit_entry(nombre, col, serie, limite, tok, mod):</span><span class="c">     rs.EQUIPO, rs.LIMITE_ALARMA, rs.COLUMNA = nombre, limite, col</span><span class="c">     ctx, med, lo, hi = rs.pronosticar(serie)</span><span class="c">     hechos = rs.extraer_hechos(ctx, med, lo, hi, serie)</span><span class="a">+    texto, t_slm = rs.generate_text(tok, mod, hechos)</span><span class="c">     return {"nombre": …, "estado": …, "hechos": …, …}</span><span class="c"></span><span class="a">+if __name__ == "__main__":</span><span class="c">     df = pd.read_csv("anomaly-free.csv", sep=";")</span><span class="c">     mid, tok, mod = rs.cargar_slm()</span><span class="c">     for nombre, col, fin, limite in EQUIPOS:</span><span class="a">+        e = build_unit_entry(nombre, col, serie, limite, tok, mod)</span></pre></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">New module</span>
+    <h2>The Jetson deployment</h2>
+    <p>It follows the same pattern as the AIOROS Beta deployment. Every piece was tested on the real Jetson.</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>File</th><th>What it does</th><th>How it was verified</th></tr></thead>
+    <tbody>
+      <tr><td class="fl">edge/service.py</td><td>Loads the models onto the GPU once; every 5 minutes forecasts the 4 units, writes the reports, rebuilds the dashboard and serves it on port 8095</td><td>Full cycles on the Jetson; first cycle identical to the published dashboard; replay wraps to the start at the end of the data</td></tr>
+      <tr><td class="fl">edge/units.yaml</td><td>Units, sensor, alarm limit and replay starting point</td><td>Same values as the published dashboard</td></tr>
+      <tr><td class="fl">edge/models.yaml · download_models.py</td><td>Exact version of each model and its download to the Jetson</td><td>The service loads with no internet access</td></tr>
+      <tr><td class="fl">edge/requirements-edge.txt</td><td>Exact software versions, with GPU support</td><td>The GPU computes the same as the processor (relative difference 8.6×10⁻⁸)</td></tr>
+      <tr><td class="fl">edge/aioros-bodega-forecast.service</td><td>Permanent service; starts with the board and restarts if it fails</td><td>Active after the deployments and rollbacks</td></tr>
+      <tr><td class="fl">scripts/bootstrap-jetson.sh</td><td>One-time setup with admin rights, limited to this service</td><td>Run once; permissions checked</td></tr>
+      <tr><td class="fl">scripts/deploy-edge.sh</td><td>Copies a new version, tests it with one real cycle and only then activates it; if it doesn't start, reverts to the previous one</td><td>2 failed attempts stopped before activation; 2 successful deployments, one with the service running</td></tr>
+      <tr><td class="fl">scripts/rollback-edge.sh</td><td>Switches back to an earlier verified version</td><td>Round trip between the two versions</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Main finding · predates the deployment</span>
+    <h2>The alert texts say the unit is normal</h2>
+    <p>We reviewed the 16 reports the Jetson produced in its first cycles. In 7 of them the forecast crosses the alarm limit and the status is ALERT. <strong>Only 1 of those 7 texts mentions the crossing; 5 say the unit is operating in its normal range or that there is no risk.</strong> The Mac produced the same text for the same case, so the problem does not come from the deployment.</p>
+  </div>
+  <div class="evidence">
+    <div class="quote">
+      <div class="who"><span>Blast freezer 1 · cycle 2</span><span>status: ALERT</span></div>
+      <blockquote>El blast freezer 1 está funcionando <mark>dentro del rango normal</mark> con una lectura actual de 88.9 unidades del sensor. […] lo que indica que <mark>no hay riesgo inmediato</mark> de sobrecalentamiento o daño estructural.<br><span class="muted small">"…operating <b>within its normal range</b>… which means there is <b>no immediate risk</b>…"</span></blockquote>
+      <div class="truth">What the code computed: the forecast crosses the 89.3 limit in ≈ 2 minutes.</div>
+    </div>
+    <div class="quote">
+      <div class="who"><span>Blast freezer 1 · published dashboard (Mac)</span><span>status: ALERT</span></div>
+      <blockquote>Este comportamiento ascendente indica una tendencia positiva, aunque <mark>aún no supera el límite de alarma</mark>.<br><span class="muted small">"…although it <b>does not yet exceed the alarm limit</b>."</span></blockquote>
+      <div class="truth">What the code computed: the forecast crosses the limit in ≈ 8.5 minutes.</div>
+    </div>
+  </div>
+  <div class="change">
+    <div class="ch-body">
+      <div class="ch-col">
+        <div class="qa"><b>Cause</b><p>It is not only the language model. Stage 3, which is code, hands it the sentence "El equipo opera en rango normal" (the unit is operating in its normal range) whenever the <em>current</em> reading is below the limit, even when the forecast crosses it. The crossing warning comes further down the list, and the model tends to stick with the first sentence.</p></div>
+        <div class="qa"><b>Why the guardrail misses it</b><p>The guardrail only checks numbers. "Normal range" and "no risk" contain no numbers, so they pass.</p></div>
+        <div class="qa"><b>What limits the damage today</b><p>The ALERT status, the verdict and the dashboard table are computed by the code and are correct. The risk is someone reading only the text.</p></div>
+      </div>
+      <div class="ch-col">
+        <div class="diff"><div class="hd">src/reporte_slm.py · hechos_en_palabras() (current)</div><pre><span class="c">    if margen > 0:</span><span class="d">        f.append(f"La lectura actual esta {margen} … POR DEBAJO del limite …"</span><span class="d">                 f"El equipo opera en rango normal.")</span><span class="c">    …</span><span class="c">    if h["supera_limite"]:</span><span class="c">        f.append("ADVERTENCIA: el pronostico cruza el limite …")</span></pre></div>
+        <div class="qa"><b>Recommended fix</b><p>1) Say "operating in its normal range" only when the forecast does not cross the limit, and put the warning first. 2) Add a meaning check to the guardrail: if the status is ALERT, the text must mention the crossing and must not say "normal range" or "no risk"; if it fails, show a text assembled by the code instead.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">All findings</span>
+    <h2>Seven points, by priority</h2>
+    <p>The first two are in code that already existed and show up the same way on the Mac. The rest are in the new deployment module.</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Priority</th><th>Finding</th><th>Why it matters</th><th>Origin</th></tr></thead>
+    <tbody>
+      <tr><td><span class="sev h">High</span></td><td><b>Alert texts contradict the status.</b> 5 of 7 ALERT reports say the unit is normal or at no risk.</td><td>A supervisor who reads only the text would not act in time. See above.</td><td class="orig">existing · <code>hechos_en_palabras()</code></td></tr>
+      <tr><td><span class="sev m">Medium</span></td><td><b>The guardrail flags a correct figure as invented.</b> The trend is given to the model as an absolute value (0.017), but the guardrail only accepts that value rounded to 2 decimals. It also ignores the sign, so it flags "−0.017" too.</td><td>A false alarm from the guardrail (1 in 16 reports) undermines trust in it and hides real ones. It's a one-line fix.</td><td class="orig">existing · <code>verificar()</code></td></tr>
+      <tr><td><span class="sev m">Medium</span></td><td><b>Installed versions don't carry their own software environment.</b> When pinned versions change, the deployment rebuilds the shared environment while the old service is still running, and a rollback uses the new environment.</td><td>Rolling back to a version with different dependencies might not start. Fix: one environment per set of versions, referenced by each installed version. The Beta deployment has the same pattern.</td><td class="orig">new · <code>deploy-edge.sh</code></td></tr>
+      <tr><td><span class="sev m">Medium</span></td><td><b>0.5 GB of memory headroom.</b> The safeguard (this service is stopped first if memory runs out) is configured but was not tested with memory actually exhausted.</td><td>A spike in the other AIOROS services could restart the forecasting service. The real fix: compress the language model (≈ 1 GB instead of 2.9 GB).</td><td class="orig">new · deployment</td></tr>
+      <tr><td><span class="sev l">Low</span></td><td><b>The report history grows without limit.</b> About 1.9 MB a day.</td><td>About 0.7 GB a year; there is plenty of space, but it should be rotated or archived per day.</td><td class="orig">new · <code>service.py</code></td></tr>
+      <tr><td><span class="sev l">Low</span></td><td><b>The dashboard footer is out of date.</b> It says the test runs "locally" and that the planned deployment will use quantized models.</td><td>The dashboard is now served from the Jetson, with uncompressed models.</td><td class="orig">existing · template</td></tr>
+      <tr><td><span class="sev l">Low</span></td><td><b>The dashboard has no password.</b> Anyone on the local network can open it on port 8095.</td><td>Acceptable for the demo; restrict access in the cold store.</td><td class="orig">new · <code>service.py</code></td></tr>
+    </tbody>
+  </table></div>
+  <div class="impact">
+    <b class="big">60 / 60</b>
+    <p><strong>No change in this review altered a figure.</strong> The 15 values for each of the 4 units are identical on the Jetson and in the published dashboard. The two guardrail findings and the texts were already in the Mac version; the deployment only made them visible by producing reports every 5 minutes.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Recommended plan</span>
+    <h2>What to do and when</h2>
+  </div>
+  <div class="plan">
+    <div class="pl"><span class="when">Now</span><h3>Merge and fix the trivial items</h3><ul><li>Merge changes 1 and 2 and the deployment module</li><li>Fix the guardrail false positive (one line)</li><li>Update the dashboard footer</li></ul></div>
+    <div class="pl"><span class="when">Before showing a client</span><h3>Reliable alert texts</h3><ul><li>Fix the "normal range" sentence in stage 3</li><li>Meaning check in the guardrail, with a code-built fallback text</li><li>Re-review every ALERT report</li></ul></div>
+    <div class="pl"><span class="when">Before production</span><h3>Robustness in the cold store</h3><ul><li>Compress the language model and re-validate</li><li>One software environment per installed version</li><li>Rotate the history and restrict dashboard access</li></ul></div>
+  </div>
+</section>
+
+<footer>AIOROS · Predictive maintenance for the tuna cold store · Code review, 21 September 2026 · Companion to the edge test report (<code>bodega-edge-test.en.html</code>)</footer>
+</div>
+</body>
+</html>

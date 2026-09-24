@@ -52,6 +52,11 @@ se traduce en falsas alarmas.
 - Los modelos Gemma son de acceso restringido; el sistema está preparado para Gemma
   y se ejecuta mientras tanto con un modelo abierto equivalente.
 
+## Despliegue en la Jetson
+
+El pipeline corre como servicio en la Jetson Orin Nano (GPU), con el dashboard
+servido desde la placa. Guía, resultados y scripts: [`docs/DEPLOY-JETSON.md`](docs/DEPLOY-JETSON.md).
+
 ## Estructura
 
     index.html                    dashboard publicado
@@ -60,3 +65,5 @@ se traduce en falsas alarmas.
     src/evaluacion_mejorada.py    métricas de cuantiles y barrido de horizontes
     src/generar_datos_dashboard.py    genera los datos del dashboard
     data/                         dataset SKAB y salida del pipeline
+    edge/                         servicio de la Jetson y su configuracion
+    scripts/                      bootstrap / deploy / rollback de la Jetson

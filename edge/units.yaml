@@ -1,0 +1,16 @@
+# Units the Jetson service forecasts every cycle. They are the same 4 as the
+# demo (src/generar_datos_dashboard.py): stretches/sensors of the SKAB dataset
+# (data/anomaly-free.csv) replayed as if they were a live stream.
+#
+#   name     display name (shown on the dashboard, so it stays in Spanish)
+#   column   CSV column that acts as the sensor
+#   limit    operating alarm threshold (sensor units, NOT °C)
+#   start    CSV row where the replay starts. With these values the first
+#            cycle reproduces the published dashboard exactly.
+#
+# In the field, replace these with the client's real sensors.
+units:
+  - {name: "Cuarto frío principal", column: Temperature,  limit: 91.00, start: 9405}
+  - {name: "Blast freezer 1",       column: Temperature,  limit: 89.30, start: 7000}
+  - {name: "Blast freezer 2",       column: Thermocouple, limit: 29.45, start: 9405}
+  - {name: "Blast freezer 3",       column: Thermocouple, limit: 29.10, start: 6500}
